@@ -6,7 +6,7 @@ Intel processors have a video transcoding feaure called [Intel Quick Sync Video]
 
 Most Linux systems _should_ automatically detect this driver, I imagine, but my only anecdotal experience is through Debian. It's will show up under `/dev/dri`.
 
-```
+```sh
 demo@pve:~$ ls -l /dev/dri
 total 0
 drwxr-xr-x 2 root root         80 Oct 20 09:37 by-path
@@ -22,21 +22,21 @@ render:x:104:
 
 On Proxmox you can pass this driver through to your LXC by adding it to the LXC configuration file under `/etc/pve/lxc/xxx.conf` where `xxx` is the ID of your container.
 
-```
+```sh
 dev0: /dev/dri/card0,gid=44,uid=0
 dev1: /dev/dri/renderD128,gid=105,uid=0
 ```
 
 Restart the LXC using `pct`.
 
-```
+```sh
 sudo pct stop xxx
 sudo pct start xxx
 ```
 
 The device should now show up when you ssh into your container.
 
-```
+```sh
 demo@jellyfin:~$ ls /dev
 console  dri  full       initctl  mqueue  ptmx  random  stderr  stdout  tty1  urandom
 core     fd   hugepages  log      null    pts   shm     stdin   tty     tty2  zero
@@ -48,7 +48,7 @@ card0  renderD128
 
 Since I have Jellyfin running inside Docker on my LXC, the driver needs to be passed through to this container as well. In my Docker compose file I added the following under `devices`.
 
-```
+```yaml
 services:
   jellyfin:
     image: jellyfin/jellyfin:latest
@@ -60,7 +60,7 @@ services:
 
 You can now see the device inside of the container.
 
-```
+```sh
 demo@jellyfin:~/jellyfin$ sudo docker exec -it jellyfin /bin/bash
 root@jellyfin:/# ls /dev
 core  dri  fd  full  mqueue  null  ptmx  pts  random  shm  stderr  stdin  stdout  tty  urandom  zero
@@ -88,3 +88,9 @@ Toggle on these options under **Trickplay**, it's for thumbnail generation.
 You can install `intel-gpu-top` on your Jellyfin LXC and watch its performance and to confirm that the iGPU is being used for transcoding.
 
 ![intel-gpu-top and htop](./img/ss2.png)
+
+_Note:_ In order for `intel-gpu-top` to work inside the LXC you need to set the kernel paranoia level to 0 on the host.
+
+```sh
+sudo sysctl kernel.perf_event_paranoid=0
+```
